@@ -4,6 +4,7 @@ TRICKY_DIR="/data/adb/tricky_store"
 REMOTE_URL="https://raw.githubusercontent.com/dpejoh/yurikey/refs/heads/main/conf"
 TARGET_FILE="$TRICKY_DIR/keybox.xml"
 BACKUP_FILE="$TRICKY_DIR/keybox.xml.bak"
+DEPENDENCY_MODULE="/data/adb/modules/tricky_store"
 
 ui_print() {
   echo "$1"
@@ -14,6 +15,13 @@ ui_print "*********************************"
 ui_print "*****Yuri Keybox Installer*******"
 ui_print "*********************************"
 ui_print ""
+
+# Check for dependency: Tricky Store module
+if [ ! -d "$DEPENDENCY_MODULE" ]; then
+  ui_print "- Error: Tricky Store module not found!"
+  ui_print "- Please install Tricky Store before using Yuri Keybox."
+  exit 1
+fi
 
 override_keybox() {
   ui_print "- Downloading and overriding keybox.xml..."
