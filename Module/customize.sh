@@ -1,6 +1,5 @@
 #!/system/bin/sh
 
-MODPATH="${0%/*}"
 TRICKY_DIR="/data/adb/tricky_store"
 REMOTE_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/conf"
 TARGET_FILE="$TRICKY_DIR/keybox.xml"
@@ -8,6 +7,15 @@ BACKUP_FILE="$TRICKY_DIR/keybox.xml.bak"
 TMP_REMOTE="$TRICKY_DIR/remote_keybox.tmp"
 SCRIPT_REMOTE="$TRICKY_DIR/remote_script.sh"
 DEPENDENCY_MODULE="/data/adb/modules/tricky_store"
+
+if [ -d "/data/adb/modules/Yurikey" ]; then
+  MODPATH="/data/adb/modules/Yurikey"
+elif [ -d "/data/adb/modules_update/Yurikey" ]; then
+  MODPATH="/data/adb/modules_update/Yurikey"
+else
+  echo "- Error: Yurikey module path not found!"
+  exit 1
+fi
 
 ui_print ""
 ui_print "*********************************"
@@ -22,10 +30,8 @@ if [ ! -d "$DEPENDENCY_MODULE" ]; then
   exit 1
 fi
 
-# Ensure all busybox files are executable
 find "$MODPATH/bin" -type f -name busybox -exec chmod 755 {} \;
 
-# Detect ABI and assign busybox path
 ARCH=$(getprop ro.product.cpu.abi)
 case "$ARCH" in
   arm64*)   BUSYBOX_BIN="$MODPATH/bin/arm64-v8a/busybox" ;;
@@ -34,16 +40,14 @@ case "$ARCH" in
 esac
 
 fetch_remote_keybox() {
-  ui_print "- Detecting busybox/system curl/wget..."
-
   if [ -x "$BUSYBOX_BIN" ]; then
-    if "$BUSYBOX_BIN" --list | grep -q '^curl$'; then
-      ui_print "- Using busybox curl"
-      "$BUSYBOX_BIN" curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
-      return 0
-    elif "$BUSYBOX_BIN" --list | grep -q '^wget$'; then
+    if "$BUSYBOX_BIN" wget --help >/dev/null 2>&1; then
       ui_print "- Using busybox wget"
       "$BUSYBOX_BIN" wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
+      return 0
+    elif "$BUSYBOX_BIN" curl --help >/dev/null 2>&1; then
+      ui_print "- Using busybox curl"
+      "$BUSYBOX_BIN" curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
       return 0
     fi
   fi
@@ -59,13 +63,13 @@ fetch_remote_keybox() {
   fi
 
   ui_print "- Error: No curl or wget available (busybox or system)."
-  ui_print "- Cannot fetch remote keybox."
   return 1
 }
 
 update_keybox() {
   ui_print "- Fetching remote keybox..."
   if ! fetch_remote_keybox; then
+    ui_print "- Failed to fetch remote keybox!"
     return
   fi
 
