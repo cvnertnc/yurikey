@@ -2,7 +2,6 @@
 
 TRICKY_DIR="/data/adb/tricky_store"
 REMOTE_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/conf"
-VERSION_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/version"
 TARGET_FILE="$TRICKY_DIR/keybox.xml"
 BACKUP_FILE="$TRICKY_DIR/keybox.xml.bak"
 TMP_REMOTE="$TRICKY_DIR/remote_keybox.tmp"
@@ -21,21 +20,6 @@ if [ ! -d "$DEPENDENCY_MODULE" ]; then
   ui_print "- Please install Tricky Store before using Yuri Keybox."
   exit 1
 fi
-
-version() {
-  ui_print "- Checking latest available keybox..."
-
-  if command -v curl >/dev/null 2>&1; then
-    VERSION=$(curl -fsSL "$VERSION_URL")
-    ui_print "- $VERSION version available."
-  elif command -v wget >/dev/null 2>&1; then
-    VERSION=$(wget -qO- "$VERSION_URL")
-    ui_print "- $VERSION version available."
-  else
-    VERSION=""
-    ui_print "- Failed to fetch version info."
-  fi
-}
 
 fetch_remote_keybox() {
   if command -v curl >/dev/null 2>&1; then
@@ -77,7 +61,6 @@ update_keybox() {
 # Start logic
 ui_print "- Checking if there is an Yuri Keybox..."
 mkdir -p "$TRICKY_DIR"
-version
 update_keybox
 
 sleep 2
