@@ -9,6 +9,10 @@ TMP_REMOTE="$TRICKY_DIR/remote_keybox.tmp"
 SCRIPT_REMOTE="$TRICKY_DIR/remote_script.sh"
 DEPENDENCY_MODULE="/data/adb/modules/tricky_store"
 
+ui_print() {
+    echo "$1"
+}
+
 # Check for dependency: Tricky Store module
 if [ ! -d "$DEPENDENCY_MODULE" ]; then
   ui_print "- Error: Tricky Store module not found!"
