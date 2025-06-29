@@ -15,23 +15,23 @@ log_message() {
 
 # Check for dependency: Tricky Store module
 if [ ! -d "$DEPENDENCY_MODULE" ]; then
-  log_message "- Error: Tricky Store module not found!"
-  log_message "- Please install Tricky Store before using Yuri Keybox."
+  log_message "Error: Tricky Store module not found!"
+  log_message "Please install Tricky Store before using Yuri Keybox."
   exit 1
 fi
 
 version() {
-  log_message "- Checking latest available keybox..."
+  log_message "Checking latest available keybox..."
 
   if command -v curl >/dev/null 2>&1; then
     VERSION=$(curl -fsSL "$VERSION_URL")
-    log_message "- $VERSION version available."
+    log_message "$VERSION version available."
   elif command -v wget >/dev/null 2>&1; then
     VERSION=$(wget -qO- "$VERSION_URL")
-    log_message "- $VERSION version available."
+    log_message "$VERSION version available."
   else
     VERSION=""
-    log_message "- Failed to fetch version info."
+    log_message "Failed to fetch version info."
   fi
 }
 
@@ -41,39 +41,39 @@ fetch_remote_keybox() {
   elif command -v wget >/dev/null 2>&1; then
     wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
   else
-    log_message "- Error: curl or wget not available."
-    log_message "- Cannot fetch remote keybox."
+    log_message "Error: curl or wget not available."
+    log_message "Cannot fetch remote keybox."
     return 1
   fi
   return 0
 }
 
 update_keybox() {
-  log_message "- Fetching remote keybox..."
+  log_message "Fetching remote keybox..."
   if ! fetch_remote_keybox; then
     return
   fi
 
   if [ -f "$TARGET_FILE" ]; then
     if cmp -s "$TARGET_FILE" "$TMP_REMOTE"; then
-      log_message "- Existing Yuri Keybox found. No changes made."
+      log_message "Existing Yuri Keybox found. No changes made."
       rm -f "$TMP_REMOTE"
       return
     else
-      log_message "- Existing keybox not by Yuri."
-      log_message "- Creating a backup..."
+      log_message "Existing keybox not by Yuri."
+      log_message "Creating a backup..."
       mv "$TARGET_FILE" "$BACKUP_FILE"
     fi
   else
-    log_message "- No keybox found. Creating a new one."
+    log_message "No keybox found. Creating a new one."
   fi
 
   mv "$TMP_REMOTE" "$TARGET_FILE"
-  log_message "- keybox.xml successfully updated."
+  log_message "keybox.xml successfully updated."
 }
 
 # Start logic
-log_message "- Checking if there is an Yuri Keybox..."
+log_message "Checking if there is an Yuri Keybox..."
 mkdir -p "$TRICKY_DIR"
 version
 update_keybox
