@@ -5,7 +5,7 @@ set +o standalone
 unset ASH_STANDALONE
 
 sh $MODPATH/Yuri/kill_google_process.sh
-sh $MODPATH/yuri_keybox.sh
+sh $MODPATH/Yuri/yuri_keybox.sh
 sh $MODPATH/Yuri/target_txt.sh
 sh $MODPATH/Yuri/security_patch.sh
 
