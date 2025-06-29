@@ -4,10 +4,18 @@ TRICKY_DIR="/data/adb/tricky_store"
 REMOTE_URL="https://raw.githubusercontent.com/dpejoh/yurikey/refs/heads/main/conf"
 TARGET_FILE="$TRICKY_DIR/keybox.xml"
 BACKUP_FILE="$TRICKY_DIR/keybox.xml.bak"
+DEPENDENCY_MODULE="/data/adb/modules/tricky_store"
 
 log_message() {
     echo "$(date +'%Y-%m-%d %H:%M:%S') [YURI_KEYBOX] $1"
 }
+
+# Check for dependency: Tricky Store module
+if [ ! -d "$DEPENDENCY_MODULE" ]; then
+  log_message "- Error: Tricky Store module not found!"
+  log_message "- Please install Tricky Store before using Yuri Keybox."
+  exit 1
+fi
 
 log_message "Start"
 
