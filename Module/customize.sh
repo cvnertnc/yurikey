@@ -22,24 +22,26 @@ if [ ! -d "$DEPENDENCY_MODULE" ]; then
   exit 1
 fi
 
-ARCH=$(getprop ro.product.cpu.abi)
-if [ "$ARCH" = "arm64-v8a" ]; then
-  BUSYBOX_BIN="$MODPATH/bin/arm64-v8a/busybox"
-else
-  BUSYBOX_BIN="$MODPATH/bin/armeabi-v7a/busybox"
-fi
+# Ensure all busybox files are executable
+find "$MODPATH/bin" -type f -name busybox -exec chmod 755 {} \;
 
-[ -f "$BUSYBOX_BIN" ] && chmod +x "$BUSYBOX_BIN"
+# Detect ABI and assign busybox path
+ARCH=$(getprop ro.product.cpu.abi)
+case "$ARCH" in
+  arm64*)   BUSYBOX_BIN="$MODPATH/bin/arm64-v8a/busybox" ;;
+  armeabi*) BUSYBOX_BIN="$MODPATH/bin/armeabi-v7a/busybox" ;;
+  *)        BUSYBOX_BIN="" ;;
+esac
 
 fetch_remote_keybox() {
   ui_print "- Detecting busybox/system curl/wget..."
 
   if [ -x "$BUSYBOX_BIN" ]; then
-    if "$BUSYBOX_BIN" curl --version >/dev/null 2>&1; then
+    if "$BUSYBOX_BIN" --list | grep -q '^curl$'; then
       ui_print "- Using busybox curl"
       "$BUSYBOX_BIN" curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
       return 0
-    elif "$BUSYBOX_BIN" wget --version >/dev/null 2>&1; then
+    elif "$BUSYBOX_BIN" --list | grep -q '^wget$'; then
       ui_print "- Using busybox wget"
       "$BUSYBOX_BIN" wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
       return 0
