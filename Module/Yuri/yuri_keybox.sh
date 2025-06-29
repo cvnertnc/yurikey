@@ -40,30 +40,38 @@ ARCH=$(getprop ro.product.cpu.abi)
 if [ "$ARCH" = "arm64-v8a" ]; then
   BUSYBOX_BIN="$MODPATH/bin/arm64-v8a/busybox"
 else
-  BUSYBOX_BIN="MODPATH/bin/armeabi-v7a/busybox"
+  BUSYBOX_BIN="$MODPATH/bin/armeabi-v7a/busybox"
 fi
 
+[ -f "$BUSYBOX_BIN" ] && chmod +x "$BUSYBOX_BIN"
+
 fetch_remote_keybox() {
+  ui_print "- Detecting busybox/system curl/wget..."
+
   if [ -x "$BUSYBOX_BIN" ]; then
     if "$BUSYBOX_BIN" curl --version >/dev/null 2>&1; then
+      ui_print "- Using busybox curl"
       "$BUSYBOX_BIN" curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
       return 0
     elif "$BUSYBOX_BIN" wget --version >/dev/null 2>&1; then
+      ui_print "- Using busybox wget"
       "$BUSYBOX_BIN" wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
       return 0
     fi
   fi
 
   if command -v curl >/dev/null 2>&1; then
+    ui_print "- Using system curl"
     curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
     return 0
   elif command -v wget >/dev/null 2>&1; then
+    ui_print "- Using system wget"
     wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
     return 0
   fi
 
-  log_message "- Error: No curl or wget available (busybox or system)."
-  log_message "- Cannot fetch remote keybox."
+  ui_print "- Error: No curl or wget available (busybox or system)."
+  ui_print "- Cannot fetch remote keybox."
   return 1
 }
 
