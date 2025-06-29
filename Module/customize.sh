@@ -1,5 +1,6 @@
 #!/system/bin/sh
 
+MODPATH="${0%/*}"
 TRICKY_DIR="/data/adb/tricky_store"
 REMOTE_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/conf"
 TARGET_FILE="$TRICKY_DIR/keybox.xml"
@@ -21,17 +22,35 @@ if [ ! -d "$DEPENDENCY_MODULE" ]; then
   exit 1
 fi
 
+ARCH=$(getprop ro.product.cpu.abi)
+if [ "$ARCH" = "arm64-v8a" ]; then
+  BUSYBOX_BIN="$MODPATH/bin/arm64-v8a/busybox"
+else
+  BUSYBOX_BIN="MODPATH/bin/armeabi-v7a/busybox"
+fi
+
 fetch_remote_keybox() {
+  if [ -x "$BUSYBOX_BIN" ]; then
+    if "$BUSYBOX_BIN" curl --version >/dev/null 2>&1; then
+      "$BUSYBOX_BIN" curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
+      return 0
+    elif "$BUSYBOX_BIN" wget --version >/dev/null 2>&1; then
+      "$BUSYBOX_BIN" wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
+      return 0
+    fi
+  fi
+
   if command -v curl >/dev/null 2>&1; then
     curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
+    return 0
   elif command -v wget >/dev/null 2>&1; then
     wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
-  else
-    ui_print "- Error: curl or wget not available."
-    ui_print "- Cannot fetch remote keybox."
-    return 1
+    return 0
   fi
-  return 0
+
+  ui_print "- Error: No curl or wget available (busybox or system)."
+  ui_print "- Cannot fetch remote keybox."
+  return 1
 }
 
 update_keybox() {
