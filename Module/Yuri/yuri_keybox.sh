@@ -1,9 +1,12 @@
 #!/system/bin/sh
 
 TRICKY_DIR="/data/adb/tricky_store"
-REMOTE_URL="https://raw.githubusercontent.com/dpejoh/yurikey/refs/heads/main/conf"
+REMOTE_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/conf"
+VERSION_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/version"
 TARGET_FILE="$TRICKY_DIR/keybox.xml"
 BACKUP_FILE="$TRICKY_DIR/keybox.xml.bak"
+TMP_REMOTE="$TRICKY_DIR/remote_keybox.tmp"
+SCRIPT_REMOTE="$TRICKY_DIR/remote_script.sh"
 DEPENDENCY_MODULE="/data/adb/modules/tricky_store"
 
 log_message() {
@@ -17,28 +20,60 @@ if [ ! -d "$DEPENDENCY_MODULE" ]; then
   exit 1
 fi
 
-log_message "Start"
+version() {
+  log_message "- Checking latest available keybox..."
 
-override_keybox() {
-    log_message "Writing"
-    if command -v curl >/dev/null 2>&1; then
-        curl -fsSL "$REMOTE_URL" | base64 -d > "$TARGET_FILE"
-    elif command -v wget >/dev/null 2>&1; then
-        wget -qO- "$REMOTE_URL" | base64 -d > "$TARGET_FILE"
+  if command -v curl >/dev/null 2>&1; then
+    VERSION=$(curl -fsSL "$VERSION_URL")
+    log_message "- $VERSION version available."
+  elif command -v wget >/dev/null 2>&1; then
+    VERSION=$(wget -qO- "$VERSION_URL")
+    log_message "- $VERSION version available."
+  else
+    VERSION=""
+    log_message "- Failed to fetch version info."
+  fi
+}
+
+fetch_remote_keybox() {
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
+  else
+    log_message "- Error: curl or wget not available."
+    log_message "- Cannot fetch remote keybox."
+    return 1
+  fi
+  return 0
+}
+
+update_keybox() {
+  log_message "- Fetching remote keybox..."
+  if ! fetch_remote_keybox; then
+    return
+  fi
+
+  if [ -f "$TARGET_FILE" ]; then
+    if cmp -s "$TARGET_FILE" "$TMP_REMOTE"; then
+      log_message "- Existing Yuri Keybox found. No changes made."
+      rm -f "$TMP_REMOTE"
+      return
+    else
+      log_message "- Existing keybox not by Yuri."
+      log_message "- Creating a backup..."
+      mv "$TARGET_FILE" "$BACKUP_FILE"
     fi
+  else
+    log_message "- No keybox found. Creating a new one."
+  fi
+
+  mv "$TMP_REMOTE" "$TARGET_FILE"
+  log_message "- keybox.xml successfully updated."
 }
 
 # Start logic
+log_message "- Checking if there is an Yuri Keybox..."
 mkdir -p "$TRICKY_DIR"
-
-if [ -f "$TARGET_FILE" ]; then
-    if ! grep -q "yuriiroot" "$TARGET_FILE"; then
-        mv "$TARGET_FILE" "$BACKUP_FILE"
-    fi
-    override_keybox
-else
-    touch "$TARGET_FILE"
-    override_keybox
-fi
-
-log_message "Finish"
+version
+update_keybox
