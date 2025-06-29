@@ -1,17 +1,13 @@
 #!/system/bin/sh
 
 TRICKY_DIR="/data/adb/tricky_store"
-TARGET_FILE="$TRICKY_DIR/keybox.xml"
-BACKUP_FILE="$TRICKY_DIR/keybox.xml.bak"
 REMOTE_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/conf"
 VERSION_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/version"
+TARGET_FILE="$TRICKY_DIR/keybox.xml"
+BACKUP_FILE="$TRICKY_DIR/keybox.xml.bak"
 TMP_REMOTE="$TRICKY_DIR/remote_keybox.tmp"
 SCRIPT_REMOTE="$TRICKY_DIR/remote_script.sh"
 DEPENDENCY_MODULE="/data/adb/modules/tricky_store"
-
-ui_print() {
-  echo "$1"
-}
 
 # Check for dependency: Tricky Store module
 if [ ! -d "$DEPENDENCY_MODULE" ]; then
@@ -37,13 +33,9 @@ version() {
 
 fetch_remote_keybox() {
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$REMOTE_URL" | base64 -d > "$SCRIPT_REMOTE"
-    chmod +x "$SCRIPT_REMOTE"
-    sh "$SCRIPT_REMOTE"
+    curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
   elif command -v wget >/dev/null 2>&1; then
-    wget -qO- "$REMOTE_URL" | base64 -d > "$SCRIPT_REMOTE"
-    chmod +x "$SCRIPT_REMOTE"
-    sh "$SCRIPT_REMOTE"
+    wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
   else
     ui_print "- Error: curl or wget not available."
     ui_print "- Cannot fetch remote keybox."
@@ -52,24 +44,24 @@ fetch_remote_keybox() {
   return 0
 }
 
-update_keybox_if_needed() {
-  ui_print "- Checking for keybox update..."
+update_keybox() {
+  ui_print "- Fetching remote keybox..."
   if ! fetch_remote_keybox; then
     return
   fi
 
   if [ -f "$TARGET_FILE" ]; then
     if cmp -s "$TARGET_FILE" "$TMP_REMOTE"; then
-      ui_print "- Keybox is already up to date. No changes made."
+      ui_print "- Existing Yuri Keybox found. No changes made."
       rm -f "$TMP_REMOTE"
-      rm -rf "$SCRIPT_REMOTE"
       return
     else
-      ui_print "- Remote keybox differs. Backing up current keybox..."
+      ui_print "- Existing keybox not by Yuri."
+      ui_print "- Creating a backup..."
       mv "$TARGET_FILE" "$BACKUP_FILE"
     fi
   else
-    ui_print "- No existing keybox found. Will create a new one."
+    ui_print "- No keybox found. Creating a new one."
   fi
 
   mv "$TMP_REMOTE" "$TARGET_FILE"
@@ -77,25 +69,7 @@ update_keybox_if_needed() {
 }
 
 # Start logic
-ui_print "- Checking if there is an existing keybox..."
-
+ui_print "- Checking if there is an Yuri Keybox..."
 mkdir -p "$TRICKY_DIR"
-
-if [ -f "$TARGET_FILE" ]; then
-  if grep -q "yuriiroot" "$TARGET_FILE"; then
-    ui_print "- Existing Yuri Keybox found."
-    version
-    update_keybox_if_needed
-  else
-    ui_print "- Existing keybox not by Yuri."
-    ui_print "- Creating a backup..."
-    mv "$TARGET_FILE" "$BACKUP_FILE"
-    rm -rf "$SCRIPT_REMOTE"
-    version
-    update_keybox_if_needed
-  fi
-else
-  ui_print "- No keybox found. Creating a new one."
-  version
-  update_keybox_if_needed
-fi
+version
+update_keybox
