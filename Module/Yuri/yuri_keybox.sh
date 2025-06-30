@@ -16,6 +16,11 @@ log_message() {
 
 log_message "Start"
 
+# Remove old module if legacy path exists (lowercase 'yurikey')
+if [ -d "/data/adb/modules/yurikey" ]; then
+  touch /data/adb/modules/yurikey/remove
+fi
+
 # Detect module install location for bin/busybox (Magisk 24+ may use modules_update)
 if [ -d "/data/adb/modules/Yurikey" ]; then
   MODPATH="/data/adb/modules/Yurikey"
