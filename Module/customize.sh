@@ -9,7 +9,7 @@ TMP_REMOTE="$TRICKY_DIR/remote_keybox.tmp"
 SCRIPT_REMOTE="$TRICKY_DIR/remote_script.sh"
 DEPENDENCY_MODULE="/data/adb/modules/tricky_store"
 
-# Detect module install location (Magisk 24+ may use modules_update)
+# Detect module install location for bin/busybox (Magisk 24+ may use modules_update)
 if [ -d "/data/adb/modules/Yurikey" ]; then
   MODPATH="/data/adb/modules/Yurikey"
 elif [ -d "/data/adb/modules_update/Yurikey" ]; then
@@ -49,11 +49,9 @@ fetch_remote_keybox() {
   # Try using busybox's wget or curl first (preferred)
   if [ -x "$BUSYBOX_BIN" ]; then
     if "$BUSYBOX_BIN" wget --help >/dev/null 2>&1; then
-      ui_print "- Using busybox wget"
       "$BUSYBOX_BIN" wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
       return 0
     elif "$BUSYBOX_BIN" curl --help >/dev/null 2>&1; then
-      ui_print "- Using busybox curl"
       "$BUSYBOX_BIN" curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
       return 0
     fi
@@ -61,11 +59,9 @@ fetch_remote_keybox() {
 
   # If busybox tools are not available, fall back to system curl or wget
   if command -v curl >/dev/null 2>&1; then
-    ui_print "- Using system curl"
     curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
     return 0
   elif command -v wget >/dev/null 2>&1; then
-    ui_print "- Using system wget"
     wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
     return 0
   fi
