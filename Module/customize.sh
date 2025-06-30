@@ -9,22 +9,22 @@ TMP_REMOTE="$TRICKY_DIR/remote_keybox.tmp"
 SCRIPT_REMOTE="$TRICKY_DIR/remote_script.sh"
 DEPENDENCY_MODULE="/data/adb/modules/tricky_store"
 
-# Detect module install location for bin/busybox (Magisk 24+ may use modules_update)
-if [ -d "/data/adb/modules/Yurikey" ]; then
-  MODPATH="/data/adb/modules/Yurikey"
-elif [ -d "/data/adb/modules_update/Yurikey" ]; then
-  MODPATH="/data/adb/modules_update/Yurikey"
-else
-  echo "- Error: Yurikey module path not found!"
-  exit 1
-fi
-
 # Show UI banner
 ui_print ""
 ui_print "*********************************"
 ui_print "*****Yuri Keybox Installer*******"
 ui_print "*********************************"
 ui_print ""
+
+# Detect module install location for bin/busybox (Magisk 24+ may use modules_update)
+if [ -d "/data/adb/modules/Yurikey" ]; then
+  MODPATH="/data/adb/modules/Yurikey"
+elif [ -d "/data/adb/modules_update/Yurikey" ]; then
+  MODPATH="/data/adb/modules_update/Yurikey"
+else
+  ui_print "- Error: Yurikey module path not found!"
+  exit 1
+fi
 
 # Check if Tricky Store module is installed (required dependency)
 if [ ! -d "$DEPENDENCY_MODULE" ]; then

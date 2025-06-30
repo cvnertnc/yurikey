@@ -3,12 +3,18 @@
 # Define important paths and file names
 TRICKY_DIR="/data/adb/tricky_store"
 REMOTE_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/conf"
-VERSION_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/version"
 TARGET_FILE="$TRICKY_DIR/keybox.xml"
 BACKUP_FILE="$TRICKY_DIR/keybox.xml.bak"
 TMP_REMOTE="$TRICKY_DIR/remote_keybox.tmp"
 SCRIPT_REMOTE="$TRICKY_DIR/remote_script.sh"
 DEPENDENCY_MODULE="/data/adb/modules/tricky_store"
+
+# For detailed logs
+log_message() {
+    echo "$(date +'%Y-%m-%d %H:%M:%S') [YURI_KEYBOX] $1"
+}
+
+log_message "Start"
 
 # Detect module install location for bin/busybox (Magisk 24+ may use modules_update)
 if [ -d "/data/adb/modules/Yurikey" ]; then
@@ -16,14 +22,9 @@ if [ -d "/data/adb/modules/Yurikey" ]; then
 elif [ -d "/data/adb/modules_update/Yurikey" ]; then
   MODPATH="/data/adb/modules_update/Yurikey"
 else
-  echo "Error: Yurikey module path not found!"
+  log_message "Error: Yurikey module path not found!"
   exit 1
 fi
-
-# For detailed logs
-log_message() {
-    echo "$(date +'%Y-%m-%d %H:%M:%S') [YURI_KEYBOX] $1"
-}
 
 # Check if Tricky Store module is installed (required dependency)
 if [ ! -d "$DEPENDENCY_MODULE" ]; then
@@ -31,22 +32,6 @@ if [ ! -d "$DEPENDENCY_MODULE" ]; then
   log_message "Please install Tricky Store before using Yuri Keybox."
   exit 1
 fi
-
-# Information about the Keybox version
-version() {
-  log_message "Checking latest available keybox..."
-
-  if command -v curl >/dev/null 2>&1; then
-    VERSION=$(curl -fsSL "$VERSION_URL")
-    log_message "$VERSION version available."
-  elif command -v wget >/dev/null 2>&1; then
-    VERSION=$(wget -qO- "$VERSION_URL")
-    log_message "$VERSION version available."
-  else
-    VERSION=""
-    log_message "Failed to fetch version info."
-  fi
-}
 
 # Ensure all busybox binaries inside /bin/ are executable
 find "$MODPATH/bin" -type f -name busybox -exec chmod 755 {} \;
@@ -88,9 +73,9 @@ fetch_remote_keybox() {
 
 # Function to update the keybox file
 update_keybox() {
-  log_message "Fetching remote keybox..."
+  log_message "Writing"
   if ! fetch_remote_keybox; then
-    log_message "Failed to fetch remote keybox!"
+    log_message "Failed to Writing remote keybox!"
     return
   fi
 
@@ -98,26 +83,20 @@ update_keybox() {
   if [ -f "$TARGET_FILE" ]; then
     # If the new one is identical, skip update
     if cmp -s "$TARGET_FILE" "$TMP_REMOTE"; then
-      log_message "Existing Yuri Keybox found. No changes made."
       rm -f "$TMP_REMOTE"
       return
     else
       # If the file differs, back up the old one
-      log_message "Existing keybox not by Yuri."
-      log_message "Creating a backup..."
       mv "$TARGET_FILE" "$BACKUP_FILE"
     fi
-  else
-    log_message "No keybox found. Creating a new one."
   fi
 
   # Move the downloaded keybox into place
   mv "$TMP_REMOTE" "$TARGET_FILE"
-  log_message "keybox.xml successfully updated."
 }
 
 # Start main logic
-log_message "Checking if there is an Yuri Keybox..."
 mkdir -p "$TRICKY_DIR" # Make sure the directory exists
-version # Version keybox
 update_keybox          # Begin the update process
+
+log_message "Finish"
