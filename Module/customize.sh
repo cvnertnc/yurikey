@@ -21,24 +21,9 @@ if [ -d "/data/adb/modules/yurikey" ]; then
   touch /data/adb/modules/yurikey/remove
 fi
 
-# Remove old module if legacy path exists (lowercase 'yurikey')
-if [ -d "/data/adb/modules/yurikey" ]; then
-  touch /data/adb/modules/yurikey/remove
-fi
-
 # Remove unauthorized module if it exists (MagiskLabs - copied YuriRoot code)
 if [ -d "/data/adb/modules/MagiskLabs" ]; then
   touch /data/adb/modules/MagiskLabs/remove
-fi
-
-# Detect module install location for bin/busybox (Magisk 24+ may use modules_update)
-if [ -d "/data/adb/modules/Yurikey" ]; then
-  MODPATH="/data/adb/modules/Yurikey"
-elif [ -d "/data/adb/modules_update/Yurikey" ]; then
-  MODPATH="/data/adb/modules_update/Yurikey"
-else
-  ui_print "- Error: Yurikey module path not found!"
-  exit 1
 fi
 
 # Check if Tricky Store module is installed (required dependency)
@@ -48,42 +33,18 @@ if [ ! -d "$DEPENDENCY_MODULE" ]; then
   exit 1
 fi
 
-# Ensure all busybox binaries inside /bin/ are executable
-find "$MODPATH/bin" -type f -name busybox -exec chmod 755 {} \;
-
-# Detect device CPU architecture to choose correct busybox binary
-ARCH=$(getprop ro.product.cpu.abi)
-case "$ARCH" in
-  arm64*)   BUSYBOX_BIN="$MODPATH/bin/arm64-v8a/busybox" ;;
-  armeabi*) BUSYBOX_BIN="$MODPATH/bin/armeabi-v7a/busybox" ;;
-  *)        BUSYBOX_BIN="" ;; # Fallback if unknown architecture
-esac
-
-# Function to download the remote keybox using busybox or system tools
+# Function to download the remote keybox
 fetch_remote_keybox() {
-  # Try using busybox's wget or curl first (preferred)
-  if [ -x "$BUSYBOX_BIN" ]; then
-    if "$BUSYBOX_BIN" wget --help >/dev/null 2>&1; then
-      "$BUSYBOX_BIN" wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
-      return 0
-    elif "$BUSYBOX_BIN" curl --help >/dev/null 2>&1; then
-      "$BUSYBOX_BIN" curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
-      return 0
-    fi
-  fi
-
-  # If busybox tools are not available, fall back to system curl or wget
   if command -v curl >/dev/null 2>&1; then
     curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
-    return 0
   elif command -v wget >/dev/null 2>&1; then
     wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
-    return 0
+  else
+    ui_print "- Error: curl or wget not available."
+    ui_print "- Cannot fetch remote keybox."
+    return 1
   fi
-
-  # If nothing is available, exit with error
-  ui_print "- Error: No curl or wget available (busybox or system)."
-  return 1
+  return 0
 }
 
 # Function to update the keybox file
