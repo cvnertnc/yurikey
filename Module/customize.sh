@@ -35,10 +35,10 @@ fi
 
 # Function to download the remote keybox
 fetch_remote_keybox() {
-  if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
-  elif command -v wget >/dev/null 2>&1; then
-    wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
+  if command -v su -c curl >/dev/null 2>&1; then
+    su -c curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
+  elif command -v su -c wget >/dev/null 2>&1; then
+    su -c wget -qO- "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
   else
     ui_print "- Error: curl or wget not available."
     ui_print "- Cannot fetch remote keybox."
