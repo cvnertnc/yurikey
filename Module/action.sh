@@ -1,5 +1,6 @@
 #!/system/bin/sh
 
+# Define important paths and file names
 TRICKY_DIR="/data/adb/tricky_store"
 REMOTE_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/conf"
 VERSION_URL="https://raw.githubusercontent.com/dpejoh/yurikey/main/version"
@@ -9,17 +10,19 @@ TMP_REMOTE="$TRICKY_DIR/remote_keybox.tmp"
 SCRIPT_REMOTE="$TRICKY_DIR/remote_script.sh"
 DEPENDENCY_MODULE="/data/adb/modules/tricky_store"
 
+# Define ui_print function
 ui_print() {
-    echo "$1"
+  echo "$1"
 }
 
-# Check for dependency: Tricky Store module
+# Check if Tricky Store module is installed (required dependency)
 if [ ! -d "$DEPENDENCY_MODULE" ]; then
   ui_print "- Error: Tricky Store module not found!"
   ui_print "- Please install Tricky Store before using Yuri Keybox."
   exit 1
 fi
 
+# Getting the Keybox version
 version() {
   ui_print "- Checking latest available keybox..."
 
@@ -35,6 +38,7 @@ version() {
   fi
 }
 
+# Function to download the remote keybox
 fetch_remote_keybox() {
   if command -v curl >/dev/null 2>&1; then
     curl -fsSL "$REMOTE_URL" | base64 -d > "$TMP_REMOTE"
@@ -48,18 +52,23 @@ fetch_remote_keybox() {
   return 0
 }
 
+# Function to update the keybox file
 update_keybox() {
   ui_print "- Fetching remote keybox..."
   if ! fetch_remote_keybox; then
+    ui_print "- Failed to fetch remote keybox!"
     return
   fi
 
+  # Check if keybox already exists
   if [ -f "$TARGET_FILE" ]; then
+    # If the new one is identical, skip update
     if cmp -s "$TARGET_FILE" "$TMP_REMOTE"; then
       ui_print "- Existing Yuri Keybox found. No changes made."
       rm -f "$TMP_REMOTE"
       return
     else
+      # If the file differs, back up the old one
       ui_print "- Existing keybox not by Yuri."
       ui_print "- Creating a backup..."
       mv "$TARGET_FILE" "$BACKUP_FILE"
@@ -68,12 +77,12 @@ update_keybox() {
     ui_print "- No keybox found. Creating a new one."
   fi
 
+  # Move the downloaded keybox into place
   mv "$TMP_REMOTE" "$TARGET_FILE"
   ui_print "- keybox.xml successfully updated."
 }
 
-# Start logic
+# Start main logic
 ui_print "- Checking if there is an Yuri Keybox..."
-mkdir -p "$TRICKY_DIR"
-version
-update_keybox
+mkdir -p "$TRICKY_DIR" # Make sure the directory exists
+update_keybox          # Begin the update process
